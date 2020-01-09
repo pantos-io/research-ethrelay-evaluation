@@ -6,7 +6,7 @@ The experiments are performed using block headers of the main Ethereum network w
 * Node.js
 * Ethereum node (e.g., [Ganache](https://www.trufflesuite.com/ganache))
 
-Clone the repository and then run `npm link` in the project root. This symlinks the CLI tool as `testimonium-evaluation`.
+Clone the repository and then run `npm install` and `npm link` in the project root. This symlinks the CLI tool as `testimonium-evaluation`.
 
 ## Setup
 The block headers are stored in a PostgreSQL database.
