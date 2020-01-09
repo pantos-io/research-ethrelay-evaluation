@@ -26,6 +26,8 @@
 .idea/**/uiDesigner.xml
 .idea/**/dbnavigator.xml
 
+dbconfig
+
 # Gradle
 .idea/**/gradle.xml
 .idea/**/libraries
@@ -196,5 +198,5 @@ dist/
 # Temporary folders
 tmp/
 temp/
-
+config
 # End of https://www.gitignore.io/api/node,intellij
