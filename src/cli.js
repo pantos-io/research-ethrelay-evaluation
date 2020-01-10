@@ -16,12 +16,12 @@ if (args.length < 1) {
 switch (args[0]) {
     case 'setup':
         setupContracts(GENESIS_BLOCK, NO_OF_BLOCKS)
-            .then(() => console.log('Successfully deployed contracts.'))
+            .then(() => console.log('Successfully setup contracts for evaluation.'))
             .catch(err => console.error(err));
         break;
     case 'start':
         startEvaluation()
-            .then(() => console.log('Successfully ran experiments.'))
+            .then(() => console.log('Successfully ran evaluation.'))
             .catch(err => console.error(err));
         break;
     default:

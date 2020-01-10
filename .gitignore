@@ -198,5 +198,8 @@ dist/
 # Temporary folders
 tmp/
 temp/
+
+# Custom
+build/
 config
 # End of https://www.gitignore.io/api/node,intellij

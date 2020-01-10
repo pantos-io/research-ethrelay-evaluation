@@ -14,6 +14,7 @@
   "dependencies": {
     "pg": "^7.17.0",
     "rlp": "^2.2.4",
+    "solidity-rlp": "^2.0.1",
     "web3": "^1.2.4"
   }
 }
