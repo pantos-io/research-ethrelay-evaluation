@@ -23,7 +23,7 @@ const submitEpochData = async (ethashContractInstance, epochData) => {
                 return;
             }
 
-            await ethashContractInstance.methods.setEpochData(epoch, fullSizeIn128Resolution, branchDepth, nodes, start.toString(), mnlen.toString()).send();
+            await ethashContractInstance.setEpochData(epoch, fullSizeIn128Resolution, branchDepth, nodes, start.toString(), mnlen.toString());
 
             start = start.add(mnlen);
             nodes = [];

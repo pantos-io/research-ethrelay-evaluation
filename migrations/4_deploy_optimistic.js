@@ -1,5 +1,5 @@
 const Ethash = artifacts.require("Ethash");
-const Testimonium = artifacts.require("optimistic/Testimonium");
+const Testimonium = artifacts.require("optimistic/TestimoniumOptimistic");
 
 const Web3 = require('web3');
 const {createRLPHeader} = require("../src/utils");

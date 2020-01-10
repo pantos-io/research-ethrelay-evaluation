@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "testimonium-evaluation": "./src/cli.js"
+    "testimonium-evaluation": "./cli.sh"
   },
   "author": "",
   "license": "MIT",

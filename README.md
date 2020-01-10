@@ -6,37 +6,40 @@ The evaluation is performed using block headers of the main Ethereum network whi
 * Node.js
 * Ethereum node (e.g., [Ganache](https://www.trufflesuite.com/ganache))
 
-Clone the repository and then run `npm install` and `npm link` in the project root. This symlinks the CLI tool as `testimonium-evaluation`.
-
-Before the evaluation, you need to have all the necessary Testimonium smart contracts deployed. 
-Make sure Ganache is running, then simply execute `truffle migrate --reset` to deploy the contracts.  
+Clone the repository and then run the following commands in the project root:
+```shell script
+$ npm install
+$ npm link
+```  
 
 ## Setup
 The block headers are stored in a PostgreSQL database.
-Before running the experiments, set the correct ENV variables required for connecting to the database and 
-to the deployed contracts (replacing the corresponding variables with the addresses of the deployed contracts), e.g.,
+Before running the experiments, set the correct ENV variables required for connecting to the database, e.g.,
 ```shell script
 $ export PGUSER=postgres \
     PGHOST=localhost \
     PGPASSWORD=postgres \
     PGDATABASE=blockheader \
     PGPORT=5432 \
-    INFURA_ENDPOINT=https://mainnet.infura.io/ \
-    ETHASH=0xF8a328B1bEd197E406d08203c9284DEb4325f5b6 \
-    TESTIMONIUM_FULL=0x3cA51ba4DbB12765979a6e13bB0c15Af43A66050 \
-    TESTIMONIUM_OPTIMISTIC=0x6497AAfB07ef537799D8f5e92166C15C4126eA31 \
-    TESTIMONIUM_OPTIMIZED=0x0cD7C9aF07fd115E7a55175B6ae70E3E0A604E4f
+    INFURA_ENDPOINT=https://mainnet.infura.io/
 ```
-Then execute the command `testimonium-evaluation setup`.
-This configures all smart contracts with the necessary data for the evaluation.
+Make sure Ganache is running, then run:
+ ```
+$ testimonium-evaluation setup
+```
 
-## Start the experiments
-Start the experiments with `testimonium-evaluation start`.
+This deploys and configures all smart contracts with the necessary data for the evaluation.
+
+## Start the evaluation
+To start the evaluation run:
+ ```
+ $ testimonium-evaluation start
+```
 
 ---
 ## Further info
 ### Cleanup
-Execute `npm unlink` to remove the created symlink of the CLI tool. 
+Run `npm unlink` to remove the created symlink.
 
 ### Generate epoch data
 The Ethash smart contract needs to be set up with the epoch data required for performing full block validations.
