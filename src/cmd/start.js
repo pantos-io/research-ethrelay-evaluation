@@ -51,19 +51,25 @@ async function startEvaluation(genesisBlock, noOfBlocks) {
             const submitOptimized = await submitBlockToOptimized(block);
             process.stdout.write(`${submitOptimized}...done.\n`);
 
+            // +++ Verification +++
             process.stdout.write('Verification: ');
+            const blockForConfirmation = await targetWeb3.eth.getBlock(genesisBlock + 1);
+            const tx = await targetWeb3.eth.getTransaction(blockForConfirmation.transactions[0]);
+            const merkleProof = JSON.parse(fs.readFileSync(`./merkleproofs/${tx.hash}.json`));
+
             // full
-            const verifyFull = await verifyOnFull(genesisBlock + 1);
+            const verifyFull = await verifyOnFull(merkleProof);
             process.stdout.write(`${verifyFull}...`);
 
             // optimistic
-            const verifyOptimistic = await verifyOnOptimistic(genesisBlock + 1);
+            const verifyOptimistic = await verifyOnOptimistic(merkleProof);
             process.stdout.write(`${verifyOptimistic}...`);
 
             // optimized
-            const verifyOptimized = await verifyOnOptimized(genesisBlock + 1);
+            const verifyOptimized = await verifyOnOptimized(merkleProof);
             process.stdout.write(`${verifyOptimized}...done.\n`);
 
+            // +++ Dispute +++
             process.stdout.write('Dispute: ');
             // optimistic
             const disputeOptimistic = await disputeOnOptimistic(genesisBlock + 1);
@@ -122,12 +128,8 @@ async function submitBlockToOptimized(block) {
     return ret.receipt.gasUsed;
 }
 
-async function verifyOnFull(blockNumber) {
-    const block = await targetWeb3.eth.getBlock(blockNumber);
+async function verifyOnFull(merkleProof) {
     const feeInWei = web3.utils.toBN('100000000000000000');
-    const tx = await targetWeb3.eth.getTransaction(block.transactions[0]);
-    const merkleProof = JSON.parse(fs.readFileSync(`./merkleproofs/${tx.hash}.json`));
-
     const blockHash = web3.utils.hexToBytes(merkleProof.blockHash);
     const noOfConfirmations = 0;
     const rlpEncodedTx = web3.utils.hexToBytes(merkleProof.rlpEncodedTx);
@@ -139,12 +141,31 @@ async function verifyOnFull(blockNumber) {
     return ret.receipt.gasUsed;
 }
 
-async function verifyOnOptimistic(blockNumber) {
-    return 0;
+async function verifyOnOptimistic(merkleProof) {
+    const feeInWei = web3.utils.toBN('100000000000000000');
+    const blockHash = web3.utils.hexToBytes(merkleProof.blockHash);
+    const noOfConfirmations = 0;
+    const rlpEncodedTx = web3.utils.hexToBytes(merkleProof.rlpEncodedTx);
+    const path = web3.utils.hexToBytes(merkleProof.path);
+    const rlpEncodedNodes = web3.utils.hexToBytes(merkleProof.rlpEncodedNodes);
+
+    const testimonium = await TestimoniumOptimistic.deployed();
+    let ret = await testimonium.verifyTransaction(feeInWei, blockHash, noOfConfirmations, rlpEncodedTx, path, rlpEncodedNodes, { value: feeInWei });
+    return ret.receipt.gasUsed;
 }
 
-async function verifyOnOptimized(blockNumber) {
-    return 0;
+async function verifyOnOptimized(merkleProof) {
+    const feeInWei = web3.utils.toBN('100000000000000000');
+    const block = await targetWeb3.eth.getBlock(merkleProof.blockHash);
+    const rlpHeader = createRLPHeader(block);
+    const noOfConfirmations = 0;
+    const rlpEncodedTx = web3.utils.hexToBytes(merkleProof.rlpEncodedTx);
+    const path = web3.utils.hexToBytes(merkleProof.path);
+    const rlpEncodedNodes = web3.utils.hexToBytes(merkleProof.rlpEncodedNodes);
+
+    const testimonium = await TestimoniumOptimized.deployed();
+    let ret = await testimonium.verifyTransaction(feeInWei, rlpHeader, noOfConfirmations, rlpEncodedTx, path, rlpEncodedNodes, { value: feeInWei });
+    return ret.receipt.gasUsed;
 }
 
 async function disputeOnOptimistic(blockNumber) {
