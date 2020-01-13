@@ -1,5 +1,5 @@
 const fs = require('fs');
-const {getBlocksOfHeight, getWitnessDataForBlock} = require('../database');
+const {getBlocksOfHeight, getWitnessDataForBlock, getParentOfBlock} = require('../database');
 const {createRLPHeader} = require("../utils");
 const Web3 = require('web3');
 const targetWeb3 = new Web3(process.env.INFURA_ENDPOINT);
@@ -20,65 +20,64 @@ module.exports = async function(callback) {
 };
 
 async function startEvaluation(genesisBlock, noOfBlocks) {
-    console.log(`+++ Starting submission gas cost evaluation (Genesis: ${genesisBlock}, No. of headers: ${noOfBlocks}) +++`);
+    console.log(`+++ Starting gas cost evaluation (Genesis: ${genesisBlock}, No. of headers: ${noOfBlocks}) +++`);
     console.log('TestimoniumFull: ', TestimoniumFull.address);
     console.log('TestimoniumOptimistic: ', TestimoniumOptimistic.address);
     console.log('TestimoniumOptimized: ', TestimoniumOptimized.address);
 
-    const fd = openCSVFile(`submission_${genesisBlock}_${noOfBlocks}`);
+    const fd = openCSVFile(`gas-costs_${genesisBlock}_${noOfBlocks}`);
     fs.writeSync(fd, "run,block_number,submit_full,submit_optimistic,submit_optimized,verify_full,verify_optimistic,verify_optimized,dispute_optimistic,dispute_optimized\n");
 
     for (let run = 1; run <= noOfBlocks; run++) {
         let blockNumber = genesisBlock + run;
         console.log(`Evaluating block header(s) of height ${blockNumber}...`);
-        // submit block
         const blocks = await getBlocksOfHeight(blockNumber);
-        // const dataset_lookup = await getDataSetLookupOfBlock(blockNumber);
-        // const witness_lookup = await getWitnessLookupOfBlock(blockNumber);
         for (let block of blocks) {
             console.log(`Block ${block.hash}...`);
 
-            process.stdout.write('Submission: ');
-            // full
-            const submitFull = await submitBlockToFull(block);
-            process.stdout.write(`${submitFull}...`);
-
-            // optimistic
-            const submitOptimistic = await submitBlockToOptimistic(block);
-            process.stdout.write(`${submitOptimistic}...`);
-
-            // optimized
-            const submitOptimized = await submitBlockToOptimized(block);
-            process.stdout.write(`${submitOptimized}...done.\n`);
-
-            // +++ Verification +++
-            process.stdout.write('Verification: ');
+            // retrieve and generate necessary data
+            const witnessData = await getWitnessDataForBlock(block);
+            const dataSetLookup = witnessData.dataset_lookup;
+            const witnessForLookup = witnessData.witness_lookup;
+            const rlpHeader = createRLPHeader(block);
+            const parentBlock = await getParentOfBlock(block);
+            const rlpParent = createRLPHeader(parentBlock);
             const blockForConfirmation = await targetWeb3.eth.getBlock(genesisBlock + 1);
             const tx = await targetWeb3.eth.getTransaction(blockForConfirmation.transactions[0]);
             const merkleProof = JSON.parse(fs.readFileSync(`./merkleproofs/${tx.hash}.json`));
 
-            // full
+            // Submission
+            process.stdout.write('Submission: ');
+            const submitFull = await submitBlockToFull(rlpHeader, dataSetLookup, witnessForLookup);
+            process.stdout.write(`${submitFull}...`);
+
+            const submitOptimistic = await submitBlockToOptimistic(rlpHeader);
+            process.stdout.write(`${submitOptimistic}...`);
+
+            const submitOptimized = await submitBlockToOptimized(rlpHeader);
+            process.stdout.write(`${submitOptimized}...done.\n`);
+
+            // Verification
+            process.stdout.write('Verification: ');
+
             const verifyFull = await verifyOnFull(merkleProof);
             process.stdout.write(`${verifyFull}...`);
 
-            // optimistic
             const verifyOptimistic = await verifyOnOptimistic(merkleProof);
             process.stdout.write(`${verifyOptimistic}...`);
 
-            // optimized
             const verifyOptimized = await verifyOnOptimized(merkleProof);
             process.stdout.write(`${verifyOptimized}...done.\n`);
 
-            // +++ Dispute +++
+            // Dispute
             process.stdout.write('Dispute: ');
-            // optimistic
-            const disputeOptimistic = await disputeOnOptimistic(genesisBlock + 1);
+            const disputeOptimistic = await disputeOnOptimistic(block.hash, dataSetLookup, witnessForLookup);
             process.stdout.write(`${disputeOptimistic}...`);
 
-            // optimized
-            const disputeOptimized = await disputeOnOptimized(genesisBlock + 1);
+            const disputeOptimized = await disputeOnOptimized(rlpHeader, rlpParent, dataSetLookup, witnessForLookup);
             process.stdout.write(`${disputeOptimized}...done.\n`);
 
+            // Write to file
             fs.writeSync(fd, `${run},${blockNumber},${submitFull},${submitOptimistic},${submitOptimized},${verifyFull},${verifyOptimistic},${verifyOptimized},${disputeOptimistic},${disputeOptimized}\n`);
         }
 
@@ -88,42 +87,20 @@ async function startEvaluation(genesisBlock, noOfBlocks) {
     console.log(`+++ Done +++`);
 }
 
-async function submitBlockToFull(block) {
-    const witnessData = await getWitnessDataForBlock(block);
-    const dataset_lookup = witnessData.dataset_lookup;
-    const witness_lookup = witnessData.witness_lookup;
-    let rlpHeader = createRLPHeader(block);
-    const headerHash = web3.utils.keccak256(rlpHeader);
-    if (headerHash !== block.hash) {
-        throw Error(`Hashes don't equal (${headerHash} != ${block.hash}`);
-    }
+async function submitBlockToFull(rlpHeader, dataSetLookup, witnessForLookup) {
     const testimonium = await TestimoniumFull.deployed();
-
-    let ret = await testimonium.submitBlock(rlpHeader, dataset_lookup, witness_lookup);
+    let ret = await testimonium.submitBlock(rlpHeader, dataSetLookup, witnessForLookup);
     return ret.receipt.gasUsed;
 }
 
-async function submitBlockToOptimistic(block) {
-    let rlpHeader = createRLPHeader(block);
-    const headerHash = web3.utils.keccak256(rlpHeader);
-    if (headerHash !== block.hash) {
-        throw Error(`Hashes don't equal (${headerHash} != ${block.hash}`);
-    }
-
+async function submitBlockToOptimistic(rlpHeader) {
     const testimonium = await TestimoniumOptimistic.deployed();
-
     let ret = await testimonium.submitBlock(rlpHeader);
     return ret.receipt.gasUsed;
 }
 
-async function submitBlockToOptimized(block) {
-    let rlpHeader = createRLPHeader(block);
-    const headerHash = web3.utils.keccak256(rlpHeader);
-    if (headerHash !== block.hash) {
-        throw Error(`Hashes don't equal (${headerHash} != ${block.hash}`);
-    }
+async function submitBlockToOptimized(rlpHeader) {
     const testimonium = await TestimoniumOptimized.deployed();
-
     let ret = await testimonium.submitBlock(rlpHeader);
     return ret.receipt.gasUsed;
 }
@@ -168,12 +145,14 @@ async function verifyOnOptimized(merkleProof) {
     return ret.receipt.gasUsed;
 }
 
-async function disputeOnOptimistic(blockNumber) {
-    return 0;
+async function disputeOnOptimistic(blockHash, dataSetLookup, witnessForLookup) {
+    const testimonium = await TestimoniumOptimistic.deployed();
+    return await testimonium.disputeBlockHeader.estimateGas(blockHash, dataSetLookup, witnessForLookup);
 }
 
-async function disputeOnOptimized(blockNumber) {
-    return 0;
+async function disputeOnOptimized(rlpHeader, rlpParent, dataSetLookup, witnessForLookup) {
+    const testimonium = await TestimoniumOptimized.deployed();
+    return await testimonium.disputeBlockHeader.estimateGas(rlpHeader, rlpParent, dataSetLookup, witnessForLookup);
 }
 
 function openCSVFile(filename) {

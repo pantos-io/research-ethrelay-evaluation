@@ -22,6 +22,16 @@ async function getWitnessDataForBlock(block) {
     return result.rows[0]
 }
 
+async function getParentOfBlock(block) {
+    const client = new Client();
+    client.connect();
+    const query = "SELECT block_data FROM blockheader WHERE block_data ->> 'hash' = $1";
+    const values = [block.parentHash];
+    const result = await client.query(query, values);
+    client.end();
+    return clean(result.rows[0].block_data)
+}
+
 const clean = (blockData) => {
     return {
         ...blockData,
@@ -35,5 +45,6 @@ const clean = (blockData) => {
 
 module.exports = {
     getBlocksOfHeight,
-    getWitnessDataForBlock
+    getWitnessDataForBlock,
+    getParentOfBlock
 };

@@ -9,7 +9,7 @@ import "../../node_modules/solidity-rlp/contracts/RLPReader.sol";
 /// @notice You can use this contract for submitting new block headers, disputing already submitted block headers, and
 ///         for verifying Merkle Patricia proofs (transactions, receipts, states).
 /// @dev    This contract uses the TestimoniumCore contract and extends it with an incentive structure.
-contract Testimonium is TestimoniumCore {
+contract TestimoniumOptimistic is TestimoniumCore {
 
     uint constant ETH_IN_WEI = 1000000000000000000;
     uint constant REQUIRED_STAKE_PER_BLOCK = 1 * ETH_IN_WEI;
@@ -103,7 +103,6 @@ contract Testimonium is TestimoniumCore {
         }
         // client that triggered the dispute receives the collected stake
         clientStake[msg.sender] += collectedStake;
-        require(false, "intended violation of require check");  // undo pruneBranch for evaluation
     }
 
     function verify(uint8 verificationType, uint feeInWei, bytes32 blockHash, uint8 noOfConfirmations, bytes memory rlpEncodedValue,
