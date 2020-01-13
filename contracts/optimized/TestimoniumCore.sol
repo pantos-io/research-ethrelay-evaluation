@@ -197,7 +197,7 @@ contract TestimoniumCore {
         bytes32 headerHash = keccak256(rlpHeader);
         require(isHeaderStored(headerHash), "provided header does not exist");
         require(isHeaderStored(keccak256(rlpParent)), "provided parent does not exist");
-        require(!isUnlocked(headerHash), "dispute period is expired");
+//        require(!isUnlocked(headerHash), "dispute period is expired");  // disable check for evaluation
 
         Header storage storedHeader = headers[headerHash];
         Header storage storedParent = headers[keccak256(rlpParent)];
@@ -221,9 +221,8 @@ contract TestimoniumCore {
 
         address[] memory submitters = new address[](0);
 
-        if (returnCode != 0) {
-            submitters = removeBranch(headerHash, storedParent);
-        }
+        // always remove branch  (for evaluation)
+        submitters = removeBranch(headerHash, storedParent);
 
         emit DisputeBlock(returnCode);
         return submitters;
@@ -268,7 +267,7 @@ contract TestimoniumCore {
         (bool isPartOfLongestPoWCFork, bytes32 confirmationStart) = isBlockPartOfFork(blockHash, longestChainEndpoint);
         require(isPartOfLongestPoWCFork, "block is not part of the longest PoW chain");
 
-        if (headers[confirmationStart].blockNumber <= headers[blockHash].blockNumber + noOfConfirmations) {
+        if (headers[confirmationStart].blockNumber < headers[blockHash].blockNumber + noOfConfirmations) {
             noOfConfirmations = noOfConfirmations - uint8(headers[confirmationStart].blockNumber - headers[blockHash].blockNumber);
             bool unlockedAndConfirmed = hasEnoughConfirmations(confirmationStart, noOfConfirmations);
             require(unlockedAndConfirmed, "block is locked or not confirmed by enough blocks");
@@ -326,7 +325,7 @@ contract TestimoniumCore {
     }
 
     function isUnlocked(bytes32 blockHash) internal view returns (bool) {
-        return headers[blockHash].meta.lockedUntil < now;
+        return true;
     }
 
     function getSuccessorByForkId(bytes32 blockHash, uint forkId) private view returns (bytes32) {

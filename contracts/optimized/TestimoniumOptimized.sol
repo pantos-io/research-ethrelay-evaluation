@@ -103,6 +103,7 @@ contract TestimoniumOptimized is TestimoniumCore {
         }
         // client that triggered the dispute receives the collected stake
         clientStake[msg.sender] += collectedStake;
+        require(false, "intended violation of require check");  // undo pruneBranch for evaluation
     }
 
     function verify(uint8 verificationType, uint feeInWei, bytes memory rlpHeader, uint8 noOfConfirmations, bytes memory rlpEncodedValue,
