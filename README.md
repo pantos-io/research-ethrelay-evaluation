@@ -49,3 +49,6 @@ The data is stored in corresponding JSON files like `./epochs/<epoch>.json`
 To generate new epoch JSON files, install the [Testimonium Go Client](https://github.com/pantos-io/go-testimonium) 
 and run the command `$ go-testimonium submit epoch <epoch> --json`.
 
+### Generate merkle proof
+TODO
+
