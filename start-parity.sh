@@ -11,6 +11,5 @@ docker run -d \
 -p 30303:30303/udp \
 parity/parity \
 --chain dev \
---ui-interface all \
 --jsonrpc-interface all \
 --base-path /home/parity/.local/share/io.parity.ethereum/
