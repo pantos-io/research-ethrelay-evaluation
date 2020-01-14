@@ -10,26 +10,45 @@ const TestimoniumOptimized = artifacts.require('optimized/TestimoniumOptimized')
 
 module.exports = async function(callback) {
     const GENESIS_BLOCK = 9121452;  // --> change with care, since the ethash contract has to be loaded with the corresponding epoch data
+    const START_BLOCK = 9121453;
     const NO_OF_BLOCKS  = 100;
     try {
-        await startEvaluation(GENESIS_BLOCK, NO_OF_BLOCKS);
+        await startEvaluation(GENESIS_BLOCK, START_BLOCK, NO_OF_BLOCKS);
         callback();
     } catch (err) {
         callback(err);
     }
 };
 
-async function startEvaluation(genesisBlock, noOfBlocks) {
-    console.log(`+++ Starting gas cost evaluation (Genesis: ${genesisBlock}, No. of headers: ${noOfBlocks}) +++`);
+async function startEvaluation(genesisBlock, startBlock, noOfBlocks) {
+    console.log(`+++ Starting gas cost evaluation +++`);
     console.log('TestimoniumFull: ', TestimoniumFull.address);
     console.log('TestimoniumOptimistic: ', TestimoniumOptimistic.address);
     console.log('TestimoniumOptimized: ', TestimoniumOptimized.address);
 
-    const fd = openCSVFile(`gas-costs_${genesisBlock}_${noOfBlocks}`);
+    // retrieve and generate necessary dispute data
+    const disputeBlock = (await getBlocksOfHeight(genesisBlock + 1))[0];
+    const disputeParent = await getParentOfBlock(disputeBlock);
+    const disputeBlockRlp = createRLPHeader(disputeBlock);
+    const disputeParentRlp = createRLPHeader(disputeParent);
+    const disputeBlockWitnessData = await getWitnessDataForBlock(disputeBlock);
+
+    // retrieve and generate necessary verify data
+    const verifyBlock = await targetWeb3.eth.getBlock(genesisBlock + 1);
+    const tx = await targetWeb3.eth.getTransaction(verifyBlock.transactions[0]);
+    const merkleProof = JSON.parse(fs.readFileSync(`./merkleproofs/${tx.hash}.json`));
+
+    console.log(`Genesis Block: ${genesisBlock}`);
+    console.log(`Start Block: ${startBlock}`);
+    console.log(`No. of Blocks: ${noOfBlocks}`);
+    console.log(`Block used for disputes: ${disputeBlock.hash}`);
+    console.log(`Transaction used for verifications: ${tx.hash}`);
+
+    const fd = openCSVFile(`gas-costs_${genesisBlock}_${startBlock}_${noOfBlocks}`);
     fs.writeSync(fd, "run,block_number,submit_full,submit_optimistic,submit_optimized,verify_full,verify_optimistic,verify_optimized,dispute_optimistic,dispute_optimized\n");
 
-    for (let run = 1; run <= noOfBlocks; run++) {
-        let blockNumber = genesisBlock + run;
+    for (let run = 0; run < noOfBlocks; run++) {
+        let blockNumber = startBlock + run;
         console.log(`Evaluating block header(s) of height ${blockNumber}...`);
         const blocks = await getBlocksOfHeight(blockNumber);
         for (let block of blocks) {
@@ -40,11 +59,6 @@ async function startEvaluation(genesisBlock, noOfBlocks) {
             const dataSetLookup = witnessData.dataset_lookup;
             const witnessForLookup = witnessData.witness_lookup;
             const rlpHeader = createRLPHeader(block);
-            const parentBlock = await getParentOfBlock(block);
-            const rlpParent = createRLPHeader(parentBlock);
-            const blockForConfirmation = await targetWeb3.eth.getBlock(genesisBlock + 1);
-            const tx = await targetWeb3.eth.getTransaction(blockForConfirmation.transactions[0]);
-            const merkleProof = JSON.parse(fs.readFileSync(`./merkleproofs/${tx.hash}.json`));
 
             // Submission
             process.stdout.write('Submission: ');
@@ -71,10 +85,10 @@ async function startEvaluation(genesisBlock, noOfBlocks) {
 
             // Dispute
             process.stdout.write('Dispute: ');
-            const disputeOptimistic = await disputeOnOptimistic(block.hash, dataSetLookup, witnessForLookup);
+            const disputeOptimistic = await disputeOnOptimistic(disputeBlock.hash, disputeBlockWitnessData.dataSetLookup, disputeBlockWitnessData.witnessForLookup);
             process.stdout.write(`${disputeOptimistic}...`);
 
-            const disputeOptimized = await disputeOnOptimized(rlpHeader, rlpParent, dataSetLookup, witnessForLookup);
+            const disputeOptimized = await disputeOnOptimized(disputeBlockRlp, disputeParentRlp, disputeBlockWitnessData.dataSetLookup, disputeBlockWitnessData.witnessForLookup);
             process.stdout.write(`${disputeOptimized}...done.\n`);
 
             // Write to file
