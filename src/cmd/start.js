@@ -9,11 +9,11 @@ const TestimoniumOptimistic = artifacts.require('optimistic/TestimoniumOptimisti
 const TestimoniumOptimized = artifacts.require('optimized/TestimoniumOptimized');
 
 module.exports = async function(callback) {
-    const GENESIS_BLOCK = 9121452;  // --> change with care, since the ethash contract has to be loaded with the corresponding epoch data
-    const START_BLOCK = 9121453;
-    const NO_OF_BLOCKS  = 100;
+    const genesisBlock = process.env.GENESIS_BLOCK;  // --> change with care, since the ethash contract has to be loaded with the corresponding epoch data
+    const startBlock = process.env.START_BLOCK;
+    const noOfBlocks  = process.env.NO_OF_BLOCKS;
     try {
-        await startEvaluation(GENESIS_BLOCK, START_BLOCK, NO_OF_BLOCKS);
+        await startEvaluation(genesisBlock, startBlock, noOfBlocks);
         callback();
     } catch (err) {
         callback(err);

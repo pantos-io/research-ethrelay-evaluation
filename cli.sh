@@ -1,5 +1,6 @@
-#!/usr/bin/env sh
+#!/bin/bash
 network=development
+
 if [ "$2" != "" ]; then
   network=$2
 fi

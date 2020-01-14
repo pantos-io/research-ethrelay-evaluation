@@ -24,7 +24,10 @@ $ export PGUSER=postgres \
     PGPASSWORD=postgres \
     PGDATABASE=blockheader \
     PGPORT=5432 \
-    INFURA_ENDPOINT=https://mainnet.infura.io/
+    INFURA_ENDPOINT=https://mainnet.infura.io/ \
+    GENESIS_BLOCK=9121452 \
+    START_BLOCK=9121453 \
+    NO_OF_BLOCKS=100
 ```
 
 ### Evaluate on Ganache
