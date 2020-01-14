@@ -33,6 +33,11 @@ $ export PGUSER=postgres \
 ### Evaluate on Ganache
 Make sure Ganache is running and configured to use port 8545.
 
+TO deploy the smart contracts necessary for the evaluation, run:
+```shell script
+$ testimonium-evaluation deploy
+```
+
 To setup the smart contracts for the evaluation, simply run:
 ```shell script
 $ testimonium-evaluation setup
@@ -55,6 +60,7 @@ This will start a Parity Dev Chain in Docker with a default account already pre-
 
 Then you can setup and run the evaluation by running the following commands, respectively.
 ```shell script
+$ testimonium-evaluation deploy parity
 $ testimonium-evaluation setup parity
 $ testimonium-evaluation start parity
 ```
@@ -63,6 +69,7 @@ $ testimonium-evaluation start parity
 Setup the Ethereum node and add another configuration with a new network name (e.g., _mynetwork_) in the `truffle-config.js` file.
 Then setup and start the evaluation with the following commands.
 ```shell script
+$ testimonium-evaluation deploy mynetwork
 $ testimonium-evaluation setup mynetwork
 $ testimonium-evaluation start mynetwork
 ```
