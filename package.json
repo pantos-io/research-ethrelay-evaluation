@@ -12,6 +12,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@truffle/hdwallet-provider": "^1.0.28",
     "pg": "^7.17.0",
     "rlp": "^2.2.4",
     "solidity-rlp": "^2.0.1",

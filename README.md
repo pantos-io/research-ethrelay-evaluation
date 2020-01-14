@@ -4,7 +4,8 @@ The evaluation is performed using block headers of the main Ethereum network whi
 
 ## Prerequisites
 * Node.js
-* Ethereum node (e.g., [Ganache](https://www.trufflesuite.com/ganache))
+* Docker
+* Ethereum node (e.g., [Ganache](https://www.trufflesuite.com/ganache) or [Parity Dev Chain](https://wiki.parity.io/Private-development-chain))
 
 Clone the repository and then run the following commands in the project root:
 ```shell script
@@ -12,8 +13,10 @@ $ npm install
 $ npm link
 ```  
 
-## Setup
-The block headers are stored in a PostgreSQL database.
+## Get Started
+
+### Setup the database
+The block headers used for the evaluation need to be stored in a PostgreSQL database.
 Before running the experiments, set the correct ENV variables required for connecting to the database, e.g.,
 ```shell script
 $ export PGUSER=postgres \
@@ -23,17 +26,42 @@ $ export PGUSER=postgres \
     PGPORT=5432 \
     INFURA_ENDPOINT=https://mainnet.infura.io/
 ```
-Make sure Ganache is running, then run:
- ```
+
+### Evaluate on Ganache
+Make sure Ganache is running and configured to use port 8545.
+
+To setup the smart contracts for the evaluation, simply run:
+```shell script
 $ testimonium-evaluation setup
 ```
 
-This deploys and configures all smart contracts with the necessary data for the evaluation.
-
-## Start the evaluation
-To start the evaluation run:
- ```
+To start the evaluation, run:
+```
  $ testimonium-evaluation start
+```
+
+You might run into the issue that your account does not have enough funds for the evaluation.
+In that case, create a new Ganache workspace pre-funding each account with enough funds (e.g., 100 000 000 ETH).
+
+### Evaluate on Parity Dev Chain
+Make sure you have Docker installed, then run:
+```shell script
+./start-parity.sh
+```
+This will start a Parity Dev Chain in Docker with a default account already pre-funded with lots of Ether.
+
+Then you can setup and run the evaluation by running the following commands, respectively.
+```shell script
+$ testimonium-evaluation setup parity
+$ testimonium-evaluation start parity
+```
+
+### Evaluate on other chains
+Setup the Ethereum node and add another configuration with a new network name (e.g., _mynetwork_) in the `truffle-config.js` file.
+Then setup and start the evaluation with the following commands.
+```shell script
+$ testimonium-evaluation setup mynetwork
+$ testimonium-evaluation start mynetwork
 ```
 
 ---
@@ -50,5 +78,12 @@ To generate new epoch JSON files, install the [Testimonium Go Client](https://gi
 and run the command `$ go-testimonium submit epoch <epoch> --json`.
 
 ### Generate merkle proof
-TODO
+The gas costs of verifying a transaction are evaluated by verifying the same transaction (0xf04ea290db7113d1cb6d5bd6519140ac9d2c70ec6c13a76b750db749197225af) 
+over and over again with an ever growing number of succeeding blocks.
+
+The Merkle proof used for the verification has been pre-generated and can be found in `./merkleproofs/`.
+If you want to tweak the evaluation to evaluate another transaction instead, you need to generate the correct Merkle proof of the transaction.
+
+You can do so using the [Testimonium Go Client](https://github.com/pantos-io/go-testimonium) 
+by running the command `$ go-testimonium verify transaction <txHash> --json`. 
 
