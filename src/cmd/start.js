@@ -85,10 +85,10 @@ async function startEvaluation(genesisBlock, startBlock, noOfBlocks) {
 
             // Dispute
             process.stdout.write('Dispute: ');
-            const disputeOptimistic = await disputeOnOptimistic(disputeBlock.hash, disputeBlockWitnessData.dataSetLookup, disputeBlockWitnessData.witnessForLookup);
+            const disputeOptimistic = await disputeOnOptimistic(disputeBlock.hash, disputeBlockWitnessData.dataset_lookup, disputeBlockWitnessData.witness_lookup);
             process.stdout.write(`${disputeOptimistic}...`);
 
-            const disputeOptimized = await disputeOnOptimized(disputeBlockRlp, disputeParentRlp, disputeBlockWitnessData.dataSetLookup, disputeBlockWitnessData.witnessForLookup);
+            const disputeOptimized = await disputeOnOptimized(disputeBlockRlp, disputeParentRlp, disputeBlockWitnessData.dataset_lookup, disputeBlockWitnessData.witness_lookup);
             process.stdout.write(`${disputeOptimized}...done.\n`);
 
             // Write to file
