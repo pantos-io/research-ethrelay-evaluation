@@ -6,6 +6,7 @@ if [ "$2" != "" ]; then
 fi
 
 if [ "$1" == "setup" ]; then
+        mkdir -p ./results/
         truffle migrate --reset --network $network
         truffle exec ./src/cmd/setup.js --network $network
 elif [ "$1" == "start" ]; then
