@@ -97,7 +97,7 @@ contract TestimoniumCore {
         );
     }
 
-    function getHeaderMetaInfo(bytes32 blockHash) internal view returns (
+    function getHeaderMetaInfo(bytes32 blockHash) public view returns (
         bytes32[] memory successors, uint forkId, uint iterableIndex, bytes32 latestFork, uint lockedUntil,
         address submitter
     ) {

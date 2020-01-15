@@ -28,13 +28,6 @@ async function startEvaluation(genesisBlock, startBlock, noOfBlocks) {
     console.log('TestimoniumOptimistic: ', TestimoniumOptimistic.address);
     console.log('TestimoniumOptimized: ', TestimoniumOptimized.address);
 
-    // retrieve and generate necessary dispute data
-    const disputeBlock = (await getBlocksOfHeight(genesisBlock + 1))[0];
-    const disputeParent = await getParentOfBlock(disputeBlock);
-    const disputeBlockRlp = createRLPHeader(disputeBlock);
-    const disputeParentRlp = createRLPHeader(disputeParent);
-    const disputeBlockWitnessData = await getWitnessDataForBlock(disputeBlock);
-
     // retrieve and generate necessary verify data
     const verifyBlock = await targetWeb3.eth.getBlock(genesisBlock + 1);
     const tx = await targetWeb3.eth.getTransaction(verifyBlock.transactions[0]);
@@ -43,11 +36,10 @@ async function startEvaluation(genesisBlock, startBlock, noOfBlocks) {
     console.log(`Genesis Block: ${genesisBlock}`);
     console.log(`Start Block: ${startBlock}`);
     console.log(`No. of Blocks: ${noOfBlocks}`);
-    console.log(`Block used for disputes: ${disputeBlock.hash}`);
     console.log(`Transaction used for verifications: ${tx.hash}`);
 
     const fd = openCSVFile(`gas-costs_${genesisBlock}_${startBlock}_${noOfBlocks}`);
-    fs.writeSync(fd, "run,block_number,submit_full,submit_optimistic,submit_optimized,verify_full,verify_optimistic,verify_optimized,dispute_optimistic,dispute_optimized\n");
+    fs.writeSync(fd, "run,block_number,block_hash,branch_id_full,branch_id_optimistic,branch_id_optimized,junction_full,junction_optimistic,junction_optimized,main_chain_head_full,main_chain_head_optimistic,main_chain_head_optimized,submit_full,submit_optimistic,submit_optimized,verify_full,verify_optimistic,verify_optimized\n");
 
     for (let run = 0; run < noOfBlocks; run++) {
         let blockNumber = startBlock + run;
@@ -65,12 +57,18 @@ async function startEvaluation(genesisBlock, startBlock, noOfBlocks) {
             // Submission
             process.stdout.write('Submission: ');
             const submitFull = await submitBlockToFull(rlpHeader, dataSetLookup, witnessForLookup);
+            const headerMetaFull = await getHeaderMetaInfo(TestimoniumFull, block.hash);
+            const mainChainHeadFull = await getMainChainHead(TestimoniumFull);
             process.stdout.write(`${submitFull}...`);
 
             const submitOptimistic = await submitBlockToOptimistic(rlpHeader);
+            const headerMetaOptimistic = await getHeaderMetaInfo(TestimoniumOptimistic, block.hash);
+            const mainChainHeadOptimistic = await getMainChainHead(TestimoniumOptimistic);
             process.stdout.write(`${submitOptimistic}...`);
 
             const submitOptimized = await submitBlockToOptimized(rlpHeader);
+            const headerMetaOptimized = await getHeaderMetaInfo(TestimoniumOptimized, block.hash);
+            const mainChainHeadOptimized = await getMainChainHead(TestimoniumOptimized);
             process.stdout.write(`${submitOptimized}...done.\n`);
 
             // Verification
@@ -85,22 +83,24 @@ async function startEvaluation(genesisBlock, startBlock, noOfBlocks) {
             const verifyOptimized = await verifyOnOptimized(merkleProof);
             process.stdout.write(`${verifyOptimized}...done.\n`);
 
-            // Dispute
-            process.stdout.write('Dispute: ');
-            const disputeOptimistic = await disputeOnOptimistic(disputeBlock.hash, disputeBlockWitnessData.dataset_lookup, disputeBlockWitnessData.witness_lookup);
-            process.stdout.write(`${disputeOptimistic}...`);
-
-            const disputeOptimized = await disputeOnOptimized(disputeBlockRlp, disputeParentRlp, disputeBlockWitnessData.dataset_lookup, disputeBlockWitnessData.witness_lookup);
-            process.stdout.write(`${disputeOptimized}...done.\n`);
-
             // Write to file
-            fs.writeSync(fd, `${run},${blockNumber},${submitFull},${submitOptimistic},${submitOptimized},${verifyFull},${verifyOptimistic},${verifyOptimized},${disputeOptimistic},${disputeOptimized}\n`);
+            fs.writeSync(fd, `${run},${blockNumber},${block.hash},${headerMetaFull.forkId},${headerMetaOptimistic.forkId},${headerMetaOptimized.forkId},${headerMetaFull.latestFork},${headerMetaOptimistic.latestFork},${headerMetaOptimized.latestFork},${mainChainHeadFull},${mainChainHeadOptimistic},${mainChainHeadOptimized},${submitFull},${submitOptimistic},${submitOptimized},${verifyFull},${verifyOptimistic},${verifyOptimized}\n`);
         }
 
     }
 
     fs.closeSync(fd);
     console.log(`+++ Done +++`);
+}
+
+async function getHeaderMetaInfo(contract, blockHash) {
+    const contractInstance = await contract.deployed();
+    return contractInstance.getHeaderMetaInfo(blockHash);
+}
+
+async function getMainChainHead(contract) {
+    const contractInstance = await contract.deployed();
+    return contractInstance.longestChainEndpoint();
 }
 
 async function submitBlockToFull(rlpHeader, dataSetLookup, witnessForLookup) {
@@ -159,48 +159,6 @@ async function verifyOnOptimized(merkleProof) {
     const testimonium = await TestimoniumOptimized.deployed();
     let ret = await testimonium.verifyTransaction(feeInWei, rlpHeader, noOfConfirmations, rlpEncodedTx, path, rlpEncodedNodes, { value: feeInWei });
     return ret.receipt.gasUsed;
-}
-
-async function disputeOnOptimistic(blockHash, dataSetLookup, witnessForLookup) {
-    return new Promise(async (resolve, reject) => {
-
-        const testimonium = await TestimoniumOptimistic.deployed();
-        const accounts = await web3.eth.getAccounts();
-        const testimoniumAbi = JSON.parse(fs.readFileSync('./build/contracts/TestimoniumOptimistic.json')).abi;
-        const web3Contract = new web3.eth.Contract(testimoniumAbi, testimonium.address, {
-            from: accounts[0],
-            gas: 8000000,
-            gasPrice: 1000000000
-        });
-        web3Contract.methods.disputeBlockHeader(blockHash, dataSetLookup, witnessForLookup).send()
-        .on('confirmation', () => {
-            reject('dispute block header should not be successful in evaluation --> did you insert require(false)?')
-        })
-        .on('error', err => {
-            resolve(parseGasUsed(err.message));
-        });
-    });
-}
-
-async function disputeOnOptimized(rlpHeader, rlpParent, dataSetLookup, witnessForLookup) {
-    return new Promise(async (resolve, reject) => {
-
-        const testimonium = await TestimoniumOptimized.deployed();
-        const accounts = await web3.eth.getAccounts();
-        const testimoniumAbi = JSON.parse(fs.readFileSync('./build/contracts/TestimoniumOptimized.json')).abi;
-        const web3Contract = new web3.eth.Contract(testimoniumAbi, testimonium.address, {
-            from: accounts[0],
-            gas: 8000000,
-            gasPrice: 1000000000
-        });
-        web3Contract.methods.disputeBlockHeader(rlpHeader, rlpParent, dataSetLookup, witnessForLookup).send()
-        .on('confirmation', () => {
-            reject('dispute block header should not be successful in evaluation --> did you insert require(false)?')
-        })
-        .on('error', err => {
-            resolve(parseGasUsed(err.message));
-        });
-    });
 }
 
 function openCSVFile(filename) {
