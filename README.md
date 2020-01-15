@@ -45,7 +45,8 @@ $ testimonium-evaluation setup
 
 To start the evaluation, run:
 ```
- $ testimonium-evaluation start
+ $ testimonium-evaluation submission
+ $ testimonium-evaluation dispute
 ```
 
 You might run into the issue that your account does not have enough funds for the evaluation.
@@ -62,7 +63,8 @@ Then you can setup and run the evaluation by running the following commands, res
 ```shell script
 $ testimonium-evaluation deploy parity
 $ testimonium-evaluation setup parity
-$ testimonium-evaluation start parity
+$ testimonium-evaluation submission parity
+$ testimonium-evaluation dispute parity
 ```
 
 ### Evaluate on other chains
@@ -71,7 +73,8 @@ Then setup and start the evaluation with the following commands.
 ```shell script
 $ testimonium-evaluation deploy mynetwork
 $ testimonium-evaluation setup mynetwork
-$ testimonium-evaluation start mynetwork
+$ testimonium-evaluation submission mynetwork
+$ testimonium-evaluation dispute mynetwork
 ```
 
 ---

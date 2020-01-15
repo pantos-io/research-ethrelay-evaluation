@@ -103,7 +103,6 @@ contract TestimoniumOptimistic is TestimoniumCore {
         }
         // client that triggered the dispute receives the collected stake
         clientStake[msg.sender] += collectedStake;
-        require(false, "intended revert");
     }
 
     function verify(uint8 verificationType, uint feeInWei, bytes32 blockHash, uint8 noOfConfirmations, bytes memory rlpEncodedValue,
