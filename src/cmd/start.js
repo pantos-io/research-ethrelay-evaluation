@@ -1,6 +1,6 @@
 const fs = require('fs');
 const {getBlocksOfHeight, getWitnessDataForBlock, getParentOfBlock} = require('../database');
-const {createRLPHeader, checkEnvironmentVariables} = require("../utils");
+const {createRLPHeader, checkEnvironmentVariables, parseGasUsed} = require("../utils");
 const Web3 = require('web3');
 
 checkEnvironmentVariables()
@@ -162,13 +162,45 @@ async function verifyOnOptimized(merkleProof) {
 }
 
 async function disputeOnOptimistic(blockHash, dataSetLookup, witnessForLookup) {
-    const testimonium = await TestimoniumOptimistic.deployed();
-    return await testimonium.disputeBlockHeader.estimateGas(blockHash, dataSetLookup, witnessForLookup);
+    return new Promise(async (resolve, reject) => {
+
+        const testimonium = await TestimoniumOptimistic.deployed();
+        const accounts = await web3.eth.getAccounts();
+        const testimoniumAbi = JSON.parse(fs.readFileSync('./build/contracts/TestimoniumOptimistic.json')).abi;
+        const web3Contract = new web3.eth.Contract(testimoniumAbi, testimonium.address, {
+            from: accounts[0],
+            gas: 8000000,
+            gasPrice: 1000000000
+        });
+        web3Contract.methods.disputeBlockHeader(blockHash, dataSetLookup, witnessForLookup).send()
+        .on('confirmation', () => {
+            reject('dispute block header should not be successful in evaluation --> did you insert require(false)?')
+        })
+        .on('error', err => {
+            resolve(parseGasUsed(err.message));
+        });
+    });
 }
 
 async function disputeOnOptimized(rlpHeader, rlpParent, dataSetLookup, witnessForLookup) {
-    const testimonium = await TestimoniumOptimized.deployed();
-    return await testimonium.disputeBlockHeader.estimateGas(rlpHeader, rlpParent, dataSetLookup, witnessForLookup);
+    return new Promise(async (resolve, reject) => {
+
+        const testimonium = await TestimoniumOptimized.deployed();
+        const accounts = await web3.eth.getAccounts();
+        const testimoniumAbi = JSON.parse(fs.readFileSync('./build/contracts/TestimoniumOptimized.json')).abi;
+        const web3Contract = new web3.eth.Contract(testimoniumAbi, testimonium.address, {
+            from: accounts[0],
+            gas: 8000000,
+            gasPrice: 1000000000
+        });
+        web3Contract.methods.disputeBlockHeader(rlpHeader, rlpParent, dataSetLookup, witnessForLookup).send()
+        .on('confirmation', () => {
+            reject('dispute block header should not be successful in evaluation --> did you insert require(false)?')
+        })
+        .on('error', err => {
+            resolve(parseGasUsed(err.message));
+        });
+    });
 }
 
 function openCSVFile(filename) {

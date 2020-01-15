@@ -79,9 +79,19 @@ const checkEnvironmentVariables = () => {
     }
 };
 
+const parseGasUsed = (message) => {
+    const startIndex = message.indexOf("gasUsed");
+    if (startIndex < 0) {
+        return undefined;
+    }
+    const endIndex = message.indexOf(',', startIndex);
+    return parseInt(message.slice(startIndex + 10, endIndex));
+}
+
 module.exports = {
     submitEpochData,
     createRLPHeader,
     createRLPHeaderWithoutNonce,
-    checkEnvironmentVariables
+    checkEnvironmentVariables,
+    parseGasUsed
 };
