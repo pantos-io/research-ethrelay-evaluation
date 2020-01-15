@@ -1,9 +1,10 @@
 const fs = require("fs");
-const {submitEpochData} = require("../utils");
+const {submitEpochData, checkEnvironmentVariables} = require("../utils");
 const Ethash = artifacts.require('Ethash');
 const TestimoniumOptimistic = artifacts.require('optimistic/TestimoniumOptimistic');
 const TestimoniumOptimized = artifacts.require('optimized/TestimoniumOptimized');
 
+checkEnvironmentVariables();
 module.exports = async function(callback) {
     const genesisBlock = parseInt(process.env.GENESIS_BLOCK);  // --> change with care, since the ethash contract has to be loaded with the corresponding epoch data
     const noOfBlocks = parseInt(process.env.NO_OF_BLOCKS);

@@ -1,7 +1,9 @@
 const fs = require('fs');
 const {getBlocksOfHeight, getWitnessDataForBlock, getParentOfBlock} = require('../database');
-const {createRLPHeader} = require("../utils");
+const {createRLPHeader, checkEnvironmentVariables} = require("../utils");
 const Web3 = require('web3');
+
+checkEnvironmentVariables()
 const targetWeb3 = new Web3(process.env.INFURA_ENDPOINT);
 
 const TestimoniumFull = artifacts.require('full/TestimoniumFull');

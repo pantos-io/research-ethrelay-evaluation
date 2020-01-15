@@ -1,9 +1,9 @@
 const Ethash = artifacts.require("Ethash");
 const Testimonium = artifacts.require("full/TestimoniumFull");
-
 const Web3 = require('web3');
-const {createRLPHeader} = require("../src/utils");
+const {createRLPHeader, checkEnvironmentVariables} = require("../src/utils");
 
+checkEnvironmentVariables();
 module.exports = async function(deployer) {
   const targetWeb3 = new Web3(process.env.INFURA_ENDPOINT);
   const GENESIS_BLOCK = 9121452;

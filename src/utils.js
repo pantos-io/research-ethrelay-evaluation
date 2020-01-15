@@ -69,8 +69,19 @@ const createRLPHeaderWithoutNonce = (block) => {
     ]);
 };
 
+const checkEnvironmentVariables = () => {
+    const requiredEnv = ['INFURA_ENDPOINT', 'GENESIS_BLOCK', 'START_BLOCK', 'NO_OF_BLOCKS'];
+
+    for (const env of requiredEnv) {
+        if (process.env[env] === "") {
+            throw Error(`environment variable ${env} is not set ($ export ${env}=...)`)
+        }
+    }
+};
+
 module.exports = {
     submitEpochData,
     createRLPHeader,
-    createRLPHeaderWithoutNonce
+    createRLPHeaderWithoutNonce,
+    checkEnvironmentVariables
 };
