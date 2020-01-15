@@ -5,7 +5,7 @@ const web3 = new Web3('http://localhost:8545');
 async function getBlocksOfHeight(blocknumber) {
     const client = new Client();
     client.connect();
-    const query = 'SELECT block_data FROM blockheader WHERE block_number = $1 ORDER BY block_data -> \'timestamp\' ASC';
+    const query = 'SELECT block_data FROM blockheader WHERE block_number = $1 ORDER BY block_data ->> \'timestamp\' ASC';
     const values = [blocknumber];
     const result = await client.query(query, values);
     client.end();
