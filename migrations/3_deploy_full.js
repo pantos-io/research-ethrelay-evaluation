@@ -6,7 +6,7 @@ const {createRLPHeader, checkEnvironmentVariables} = require("../src/utils");
 checkEnvironmentVariables();
 module.exports = async function(deployer) {
   const targetWeb3 = new Web3(process.env.INFURA_ENDPOINT);
-  const GENESIS_BLOCK = 9121452;
+  const GENESIS_BLOCK = parseInt(process.env.GENESIS_BLOCK);
 
   const genesisBlock = await targetWeb3.eth.getBlock(GENESIS_BLOCK);
   const genesisRlpHeader = createRLPHeader(genesisBlock);
