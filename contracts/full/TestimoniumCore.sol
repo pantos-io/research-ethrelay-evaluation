@@ -220,22 +220,31 @@ contract TestimoniumCore {
     function isBlockPartOfFork(bytes32 blockHash, bytes32 forkEndpoint) private view returns (bool) {
         bytes32 current = forkEndpoint;
 
-        while (headers[current].meta.forkId > headers[blockHash].meta.forkId) {
-            // go to next fork point
-            current = headers[current].meta.latestFork;
+        while (current != 0) {
+            if (current == blockHash) {
+                return true;
+            }
+            current = headers[current].parent;
         }
 
-        if (headers[current].meta.forkId < headers[blockHash].meta.forkId) {
-            return false;   // the requested block is NOT part of the longest chain
-        }
+        return false;
 
-        if (headers[current].blockNumber < headers[blockHash].blockNumber) {
-            // current and the requested block are on a fork with the same fork id
-            // however, the requested block comes after the fork point (current), so the requested block cannot be part of the longest chain
-            return false;
-        }
-
-        return true;
+//        while (headers[current].meta.forkId > headers[blockHash].meta.forkId) {
+//            // go to next fork point
+//            current = headers[current].meta.latestFork;
+//        }
+//
+//        if (headers[current].meta.forkId < headers[blockHash].meta.forkId) {
+//            return false;   // the requested block is NOT part of the longest chain
+//        }
+//
+//        if (headers[current].blockNumber < headers[blockHash].blockNumber) {
+//            // current and the requested block are on a fork with the same fork id
+//            // however, the requested block comes after the fork point (current), so the requested block cannot be part of the longest chain
+//            return false;
+//        }
+//
+//        return true;
 
     }
 

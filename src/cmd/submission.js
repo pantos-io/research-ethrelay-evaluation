@@ -128,10 +128,14 @@ async function verifyOnFull(merkleProof) {
     const rlpEncodedTx = web3.utils.hexToBytes(merkleProof.rlpEncodedTx);
     const path = web3.utils.hexToBytes(merkleProof.path);
     const rlpEncodedNodes = web3.utils.hexToBytes(merkleProof.rlpEncodedNodes);
-
     const testimonium = await TestimoniumFull.deployed();
-    let ret = await testimonium.verifyTransaction(feeInWei, blockHash, noOfConfirmations, rlpEncodedTx, path, rlpEncodedNodes, { value: feeInWei });
-    return ret.receipt.gasUsed;
+    try {
+        const ret = await testimonium.verifyTransaction(feeInWei, blockHash, noOfConfirmations, rlpEncodedTx, path, rlpEncodedNodes, { value: feeInWei });
+        return ret.receipt.gasUsed;
+    } catch (e) {
+        process.stdout.write(`ERROR: ${e}\n`);
+    }
+    return 0;
 }
 
 async function verifyOnOptimistic(merkleProof) {

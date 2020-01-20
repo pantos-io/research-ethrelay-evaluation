@@ -353,6 +353,20 @@ contract TestimoniumCore {
         }
     }
 
+    function setLatestForkAndForkIdAtSuccessors(BlockHeader storage header, bytes32 latestFork, uint forkId) private {
+        if (header.meta.latestFork == latestFork) {
+            // latest fork has already been set
+            return;
+        }
+
+        header.meta.latestFork = latestFork;
+        header.meta.forkId = forkId;
+
+        if (header.meta.successors.length == 1) {
+            setLatestForkAndForkIdAtSuccessors(headers[header.meta.successors[0]], latestFork, forkId);
+        }
+    }
+
     event RemoveBranch( bytes32 root );
     function removeBranch(bytes32 rootHash) private returns (address[] memory) {
         bytes32 parentHash = headers[rootHash].parent;
@@ -373,6 +387,11 @@ contract TestimoniumCore {
                 parentHeader.meta.successors.length--;
                 break;  // we remove at most one element
             }
+        }
+
+        if (parentHeader.meta.successors.length == 1) {
+            // only one successor left after pruning -> parent is no longer a fork junction
+            setLatestForkAndForkIdAtSuccessors(headers[parentHeader.meta.successors[0]], parentHeader.meta.latestFork, parentHeader.meta.forkId);
         }
 
         // find new longest chain endpoint
