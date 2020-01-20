@@ -4,6 +4,7 @@ The evaluation is performed using block headers of the main Ethereum network whi
 
 ## Prerequisites
 * Node.js
+* Truffle
 * Docker
 * Ethereum node (e.g., [Ganache](https://www.trufflesuite.com/ganache) or [Parity Dev Chain](https://wiki.parity.io/Private-development-chain))
 
