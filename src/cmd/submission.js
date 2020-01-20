@@ -33,11 +33,13 @@ async function startEvaluation(genesisBlock, startBlock, noOfBlocks) {
     const tx = await targetWeb3.eth.getTransaction(verifyBlock.transactions[0]);
     const merkleProof = JSON.parse(fs.readFileSync(`./merkleproofs/${tx.hash}.json`));
 
+    const blockMerkleProof = await targetWeb3.eth.getBlock(merkleProof.blockHash);
+
     console.log(`Genesis Block: ${genesisBlock}`);
     console.log(`Start Block: ${startBlock}`);
     console.log(`No. of Blocks: ${noOfBlocks}`);
-    console.log(`Transaction used for verifications: ${tx.hash}`);
 
+    console.log(`Transaction used for verifications: ${tx.hash}`);
     const fd = openCSVFile(`gas-costs_${genesisBlock}_${startBlock}_${noOfBlocks}`);
     fs.writeSync(fd, "run,block_number,block_hash,branch_id_full,branch_id_optimistic,branch_id_optimized,junction_full,junction_optimistic,junction_optimized,main_chain_head_full,main_chain_head_optimistic,main_chain_head_optimized,submit_full,submit_optimistic,submit_optimized,verify_full,verify_optimistic,verify_optimized\n");
 
@@ -80,7 +82,7 @@ async function startEvaluation(genesisBlock, startBlock, noOfBlocks) {
             const verifyOptimistic = await verifyOnOptimistic(merkleProof);
             process.stdout.write(`${verifyOptimistic}...`);
 
-            const verifyOptimized = await verifyOnOptimized(merkleProof);
+            const verifyOptimized = await verifyOnOptimized(blockMerkleProof, merkleProof);
             process.stdout.write(`${verifyOptimized}...done.\n`);
 
             // Write to file
@@ -151,9 +153,8 @@ async function verifyOnOptimistic(merkleProof) {
     return ret.receipt.gasUsed;
 }
 
-async function verifyOnOptimized(merkleProof) {
+async function verifyOnOptimized(block, merkleProof) {
     const feeInWei = web3.utils.toBN('100000000000000000');
-    const block = await targetWeb3.eth.getBlock(merkleProof.blockHash);
     const rlpHeader = createRLPHeader(block);
     const noOfConfirmations = 0;
     const rlpEncodedTx = web3.utils.hexToBytes(merkleProof.rlpEncodedTx);
