@@ -32,8 +32,10 @@ async function startEvaluation(genesisBlock, startBlock, noOfBlocks) {
     const verifyBlock = await targetWeb3.eth.getBlock(genesisBlock + 1);
     const tx = await targetWeb3.eth.getTransaction(verifyBlock.transactions[0]);
     const merkleProof = JSON.parse(fs.readFileSync(`./merkleproofs/${tx.hash}.json`));
-
-    const blockMerkleProof = await targetWeb3.eth.getBlock(merkleProof.blockHash);
+    merkleProof.blockHash = web3.utils.hexToBytes(merkleProof.blockHash);
+    merkleProof.rlpEncodedTx = web3.utils.hexToBytes(merkleProof.rlpEncodedTx);
+    merkleProof.path = web3.utils.hexToBytes(merkleProof.path);
+    merkleProof.rlpEncodedNodes = web3.utils.hexToBytes(merkleProof.rlpEncodedNodes);
 
     console.log(`Genesis Block: ${genesisBlock}`);
     console.log(`Start Block: ${startBlock}`);
@@ -82,7 +84,7 @@ async function startEvaluation(genesisBlock, startBlock, noOfBlocks) {
             const verifyOptimistic = await verifyOnOptimistic(merkleProof);
             process.stdout.write(`${verifyOptimistic}...`);
 
-            const verifyOptimized = await verifyOnOptimized(blockMerkleProof, merkleProof);
+            const verifyOptimized = await verifyOnOptimized(verifyBlock, merkleProof);
             process.stdout.write(`${verifyOptimized}...done.\n`);
 
             // Write to file
@@ -125,14 +127,11 @@ async function submitBlockToOptimized(rlpHeader) {
 
 async function verifyOnFull(merkleProof) {
     const feeInWei = web3.utils.toBN('100000000000000000');
-    const blockHash = web3.utils.hexToBytes(merkleProof.blockHash);
+    // const blockHash = web3.utils.hexToBytes(merkleProof.blockHash);
     const noOfConfirmations = 0;
-    const rlpEncodedTx = web3.utils.hexToBytes(merkleProof.rlpEncodedTx);
-    const path = web3.utils.hexToBytes(merkleProof.path);
-    const rlpEncodedNodes = web3.utils.hexToBytes(merkleProof.rlpEncodedNodes);
     const testimonium = await TestimoniumFull.deployed();
     try {
-        const ret = await testimonium.verifyTransaction(feeInWei, blockHash, noOfConfirmations, rlpEncodedTx, path, rlpEncodedNodes, { value: feeInWei });
+        const ret = await testimonium.verifyTransaction(feeInWei, merkleProof.blockHash, noOfConfirmations, merkleProof.rlpEncodedTx, merkleProof.path, merkleProof.rlpEncodedNodes, { value: feeInWei });
         return ret.receipt.gasUsed;
     } catch (e) {
         process.stdout.write(`ERROR: ${e}\n`);
@@ -142,14 +141,10 @@ async function verifyOnFull(merkleProof) {
 
 async function verifyOnOptimistic(merkleProof) {
     const feeInWei = web3.utils.toBN('100000000000000000');
-    const blockHash = web3.utils.hexToBytes(merkleProof.blockHash);
     const noOfConfirmations = 0;
-    const rlpEncodedTx = web3.utils.hexToBytes(merkleProof.rlpEncodedTx);
-    const path = web3.utils.hexToBytes(merkleProof.path);
-    const rlpEncodedNodes = web3.utils.hexToBytes(merkleProof.rlpEncodedNodes);
 
     const testimonium = await TestimoniumOptimistic.deployed();
-    let ret = await testimonium.verifyTransaction(feeInWei, blockHash, noOfConfirmations, rlpEncodedTx, path, rlpEncodedNodes, { value: feeInWei });
+    let ret = await testimonium.verifyTransaction(feeInWei, merkleProof.blockHash, noOfConfirmations, merkleProof.rlpEncodedTx, merkleProof.path, merkleProof.rlpEncodedNodes, { value: feeInWei });
     return ret.receipt.gasUsed;
 }
 
@@ -157,12 +152,9 @@ async function verifyOnOptimized(block, merkleProof) {
     const feeInWei = web3.utils.toBN('100000000000000000');
     const rlpHeader = createRLPHeader(block);
     const noOfConfirmations = 0;
-    const rlpEncodedTx = web3.utils.hexToBytes(merkleProof.rlpEncodedTx);
-    const path = web3.utils.hexToBytes(merkleProof.path);
-    const rlpEncodedNodes = web3.utils.hexToBytes(merkleProof.rlpEncodedNodes);
 
     const testimonium = await TestimoniumOptimized.deployed();
-    let ret = await testimonium.verifyTransaction(feeInWei, rlpHeader, noOfConfirmations, rlpEncodedTx, path, rlpEncodedNodes, { value: feeInWei });
+    let ret = await testimonium.verifyTransaction(feeInWei, rlpHeader, noOfConfirmations, merkleProof.rlpEncodedTx, merkleProof.path, merkleProof.rlpEncodedNodes, { value: feeInWei });
     return ret.receipt.gasUsed;
 }
 
