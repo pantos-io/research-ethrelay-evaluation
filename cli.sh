@@ -11,7 +11,9 @@ elif [ "$1" == "setup" ]; then
         mkdir -p ./results/
         truffle exec ./src/cmd/setup.js --network $network
 elif [ "$1" == "submission" ]; then
-        truffle exec ./src/cmd/submission.js --network $network
+        # used to increase heap size of node (otherwise submission will abort after some time due to out of memory error)
+        trufflePath=$(which truffle)
+        node --max-old-space-size=8192 $trufflePath exec ./src/cmd/submission.js --network $network
 elif [ "$1" == "dispute" ]; then
         truffle exec ./src/cmd/dispute.js --network $network
 else
