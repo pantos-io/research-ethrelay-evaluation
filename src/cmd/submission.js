@@ -37,6 +37,16 @@ async function startEvaluation(genesisBlock, startBlock, noOfBlocks) {
     merkleProof.path = web3.utils.hexToBytes(merkleProof.path);
     merkleProof.rlpEncodedNodes = web3.utils.hexToBytes(merkleProof.rlpEncodedNodes);
 
+    let run = 0;
+    process.on('SIGINT', function() {
+        console.log("Caught interrupt signal");
+        // ensure that the current loop iteration will be the last one
+        run = noOfBlocks;
+
+        // if (i_should_exit)
+        //     process.exit();
+    });
+
     console.log(`Genesis Block: ${genesisBlock}`);
     console.log(`Start Block: ${startBlock}`);
     console.log(`No. of Blocks: ${noOfBlocks}`);
@@ -45,7 +55,7 @@ async function startEvaluation(genesisBlock, startBlock, noOfBlocks) {
     const fd = openCSVFile(`gas-costs_${genesisBlock}_${startBlock}_${noOfBlocks}`);
     fs.writeSync(fd, "run,block_number,block_hash,branch_id_full,branch_id_optimistic,branch_id_optimized,junction_full,junction_optimistic,junction_optimized,main_chain_head_full,main_chain_head_optimistic,main_chain_head_optimized,submit_full,submit_optimistic,submit_optimized,verify_full,verify_optimistic,verify_optimized\n");
 
-    for (let run = 0; run < noOfBlocks; run++) {
+    for (run = 0; run < noOfBlocks; run++) {
         let blockNumber = startBlock + run;
         console.log(`Evaluating block header(s) of height ${blockNumber}...`);
         const blocks = await getBlocksOfHeight(blockNumber);
