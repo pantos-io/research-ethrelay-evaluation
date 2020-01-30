@@ -41,37 +41,53 @@ async function startEvaluation(genesisBlock, startBlock, noOfBlocks) {
     const fd = openCSVFile(`dispute_${genesisBlock}_${startBlock}_${noOfBlocks}`);
     fs.writeSync(fd, "run,block_number,dispute_optimistic,dispute_optimized\n");
 
+    let disputeOptimisticCost = 0;
+    let disputeOptimizedCost = 0;
     for (let run = 0; run < noOfBlocks; run++) {
         let endBlock = startBlock + run;
         console.log(`+++ Run ${run} +++`);
-        await submitBlocks(startBlock, endBlock);
+        await submitBlocks(startBlock, endBlock, disputeOptimisticCost !== -1, disputeOptimizedCost !== -1);
 
         // Dispute
         process.stdout.write('Dispute: ');
-        const disputeOptimistic = await disputeOnOptimistic(disputeBlock.hash, disputeBlockWitnessData.dataset_lookup, disputeBlockWitnessData.witness_lookup);
-        process.stdout.write(`${disputeOptimistic}...`);
+        if (disputeOptimisticCost !== -1) {
+            // only dispute if last dispute has not reached block gas limit
+            disputeOptimisticCost = await disputeOnOptimistic(disputeBlock.hash, disputeBlockWitnessData.dataset_lookup, disputeBlockWitnessData.witness_lookup);
+        }
+        process.stdout.write(`${disputeOptimisticCost}...`);
 
-        const disputeOptimized = await disputeOnOptimized(disputeBlockRlp, disputeParentRlp, disputeBlockWitnessData.dataset_lookup, disputeBlockWitnessData.witness_lookup);
-        process.stdout.write(`${disputeOptimized}...done.\n`);
+        if (disputeOptimizedCost !== -1) {
+            // only dispute if last dispute has not reached block gas limit
+            disputeOptimizedCost = await disputeOnOptimized(disputeBlockRlp, disputeParentRlp, disputeBlockWitnessData.dataset_lookup, disputeBlockWitnessData.witness_lookup);
+        }
+        process.stdout.write(`${disputeOptimizedCost}...done.\n`);
 
         // Write to file
-        fs.writeSync(fd, `${run},${endBlock},${disputeOptimistic},${disputeOptimized}\n`);
+        fs.writeSync(fd, `${run},${endBlock},${disputeOptimisticCost},${disputeOptimizedCost}\n`);
 
+        if (disputeOptimisticCost === -1 && disputeOptimizedCost === -1) {
+            // both reached block gas limit -> stop evaluation
+            break;
+        }
     }
 
     fs.closeSync(fd);
     console.log(`+++ Done +++`);
 }
 
-async function submitBlocks(from, to) {
+async function submitBlocks(from, to, submitOptimistic, submitOptimized) {
     for (let i = from; i<= to; i++) {
         process.stdout.write(`Submitting block headers...(${i}/${to})`);
         const blocks = await getBlocksOfHeight(i);
         for (let block of blocks) {
             // retrieve and generate necessary data
             const rlpHeader = createRLPHeader(block);
-            await submitBlockToOptimistic(rlpHeader);
-            await submitBlockToOptimized(rlpHeader);
+            if (submitOptimistic) {
+                await submitBlockToOptimistic(rlpHeader);
+            }
+            if (submitOptimized) {
+                await submitBlockToOptimized(rlpHeader);
+            }
         }
         process.stdout.clearLine();
         process.stdout.cursorTo(0);
@@ -93,14 +109,38 @@ async function submitBlockToOptimized(rlpHeader) {
 
 async function disputeOnOptimistic(blockHash, dataSetLookup, witnessForLookup) {
     const testimonium = await TestimoniumOptimistic.deployed();
-    const ret = await testimonium.disputeBlockHeader(blockHash, dataSetLookup, witnessForLookup);
-    return ret.receipt.gasUsed;
+    try {
+        const ret = await testimonium.disputeBlockHeader(blockHash, dataSetLookup, witnessForLookup);
+        return ret.receipt.gasUsed;
+    } catch (e) {
+        process.stdout.write(`ERROR: ${e}\n`);
+    }
+    return -1;
 }
 
 async function disputeOnOptimized(rlpHeader, rlpParent, dataSetLookup, witnessForLookup) {
     const testimonium = await TestimoniumOptimized.deployed();
-    const ret = await testimonium.disputeBlockHeader(rlpHeader, rlpParent, dataSetLookup, witnessForLookup);
-    return ret.receipt.gasUsed;
+    try {
+        const ret = await testimonium.disputeBlockHeader(rlpHeader, rlpParent, dataSetLookup, witnessForLookup);
+        return ret.receipt.gasUsed;
+    } catch (e) {
+        process.stdout.write(`ERROR: ${e}\n`);
+    }
+    return -1;
+}
+
+async function verifyOnFull(merkleProof) {
+    const feeInWei = web3.utils.toBN('100000000000000000');
+    // const blockHash = web3.utils.hexToBytes(merkleProof.blockHash);
+    const noOfConfirmations = 0;
+    const testimonium = await TestimoniumFull.deployed();
+    try {
+        const ret = await testimonium.verifyTransaction(feeInWei, merkleProof.blockHash, noOfConfirmations, merkleProof.rlpEncodedTx, merkleProof.path, merkleProof.rlpEncodedNodes, { value: feeInWei });
+        return ret.receipt.gasUsed;
+    } catch (e) {
+        process.stdout.write(`ERROR: ${e}\n`);
+    }
+    return 0;
 }
 
 function openCSVFile(filename) {
