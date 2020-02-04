@@ -1,4 +1,4 @@
-# Testimonium Experiments
+# Testimonium Evaluation
 This project contains the evaluation setup for the [Testimonium blockchain relay](https://github.com/pantos-io/testimonium).
 The evaluation is performed using block headers of the main Ethereum network which have been collected between December 2019 - January 2020.
 
