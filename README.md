@@ -17,7 +17,7 @@ $ npm link
 ## Get Started
 
 ### Setup the database
-The block headers used for the evaluation need to be stored in a PostgreSQL database.
+The block headers used for the evaluation need to be stored in a PostgreSQL database (an SQL dump can be found [here](https://drive.google.com/file/d/14kiHDXJgKRogNQw0t78dH5AP399_eu7m/view?usp=sharing)).
 Before running the experiments, set the correct ENV variables required for connecting to the database, e.g.,
 ```shell script
 $ export PGUSER=postgres \
@@ -79,6 +79,11 @@ $ testimonium-evaluation dispute mynetwork
 ```
 
 ---
+
+## Results
+The directory `./results` contains the output of both evaluation scripts (submission and dispute) and a comparison
+of the branch junctions logged during submission and the branch junctions of the used dataset. 
+
 ## Further info
 ### Cleanup
 Run `npm unlink` to remove the created symlink.
