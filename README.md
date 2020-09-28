@@ -1,5 +1,5 @@
-# Testimonium Evaluation
-This project contains the evaluation setup for the [Testimonium blockchain relay](https://github.com/pantos-io/testimonium).
+# ETH Relay Evaluation
+This project contains the evaluation setup for [ETH Relay](https://github.com/pantos-io/ethrelay).
 The evaluation is performed using block headers of the main Ethereum network which have been collected between December 2019 - January 2020.
 
 ## Prerequisites
@@ -36,18 +36,18 @@ Make sure Ganache is running and configured to use port 8545.
 
 TO deploy the smart contracts necessary for the evaluation, run:
 ```shell script
-$ testimonium-evaluation deploy
+$ ethrelay-evaluation deploy
 ```
 
 To setup the smart contracts for the evaluation, simply run:
 ```shell script
-$ testimonium-evaluation setup
+$ ethrelay-evaluation setup
 ```
 
 To start the evaluation, run:
 ```
- $ testimonium-evaluation submission
- $ testimonium-evaluation dispute
+ $ ethrelay-evaluation submission
+ $ ethrelay-evaluation dispute
 ```
 
 You might run into the issue that your account does not have enough funds for the evaluation.
@@ -62,20 +62,20 @@ This will start a Parity Dev Chain in Docker with a default account already pre-
 
 Then you can setup and run the evaluation by running the following commands, respectively.
 ```shell script
-$ testimonium-evaluation deploy parity
-$ testimonium-evaluation setup parity
-$ testimonium-evaluation submission parity
-$ testimonium-evaluation dispute parity
+$ ethrelay-evaluation deploy parity
+$ ethrelay-evaluation setup parity
+$ ethrelay-evaluation submission parity
+$ ethrelay-evaluation dispute parity
 ```
 
 ### Evaluate on other chains
 Setup the Ethereum node and add another configuration with a new network name (e.g., _mynetwork_) in the `truffle-config.js` file.
 Then setup and start the evaluation with the following commands.
 ```shell script
-$ testimonium-evaluation deploy mynetwork
-$ testimonium-evaluation setup mynetwork
-$ testimonium-evaluation submission mynetwork
-$ testimonium-evaluation dispute mynetwork
+$ ethrelay-evaluation deploy mynetwork
+$ ethrelay-evaluation setup mynetwork
+$ ethrelay-evaluation submission mynetwork
+$ ethrelay-evaluation dispute mynetwork
 ```
 
 ---
@@ -93,8 +93,8 @@ The Ethash smart contract needs to be set up with the epoch data required for pe
 By default the project contains data for epochs 304-308. 
 The data is stored in corresponding JSON files like `./epochs/<epoch>.json`
 
-To generate new epoch JSON files, install the [Testimonium Go Client](https://github.com/pantos-io/go-testimonium) 
-and run the command `$ go-testimonium submit epoch <epoch> --json`.
+To generate new epoch JSON files, install the [ETH Relay Go Client](https://github.com/pantos-io/go-ethrelay) 
+and run the command `$ go-ethrelay submit epoch <epoch> --json`.
 
 ### Generate merkle proof
 The gas costs of verifying a transaction are evaluated by verifying the same transaction (0xf04ea290db7113d1cb6d5bd6519140ac9d2c70ec6c13a76b750db749197225af) 
@@ -103,6 +103,6 @@ over and over again with an ever growing number of succeeding blocks.
 The Merkle proof used for the verification has been pre-generated and can be found in `./merkleproofs/`.
 If you want to tweak the evaluation to evaluate another transaction instead, you need to generate the correct Merkle proof of the transaction.
 
-You can do so using the [Testimonium Go Client](https://github.com/pantos-io/go-testimonium) 
-by running the command `$ go-testimonium verify transaction <txHash> --json`. 
+You can do so using the [ETH Relay Go Client](https://github.com/pantos-io/go-ethrelay) 
+by running the command `$ go-ethrelay verify transaction <txHash> --json`. 
 
